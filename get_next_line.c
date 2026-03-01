@@ -1,132 +1,108 @@
+#ifndef BUFFER_SIZE
+#define BUFFER_SIZE 3
+#endif
+
 #include "get_next_line.h"
 #include <stdio.h>
 
-static char *saved = NULL;
-static int found_n = 0;
-static int cond_3 = 0;
-// char *save_subs(char *saved, char *stash);
 int     n_index(char *stash, char separator);
-char *concat_chars(char *saved, char *stash);
-char *extract_return(char *stash, char separator);
-char    *extract_remaining(char *stash, char separator);
+char *extract(char *stash, char separator, int extract_return, size_t read_bytes);
+char *return_line(char **saved, char *stash, size_t *read_bytes, int index, int fd);
+
 char    *get_next_line(int fd)
 {
+    static char *saved = NULL;
     char *stash;
-    char separator;
-    char *temp;
-    char *char_return;
     int index;
     size_t read_bytes;
-    // int found_n;
-    // int cond_3;
-    
-    // cond_3 = 0;
-    separator = '\n';
+
     stash = malloc (BUFFER_SIZE + 1);
     read_bytes = -2;
-    while (read_bytes != 0 && read_bytes != -1 && !(found_n))
+    while (read_bytes != 0 && read_bytes != -1)
     {
-        if (found_n == 1)
-        {
-            free(saved);
-            saved = NULL;
-            printf("%s", "freeing");
-        }
         read_bytes = read(fd, stash, BUFFER_SIZE);
-        // printf("saved +: %s", saved);
-        index = n_index(stash, separator);
-        found_n = 0;
-        stash[BUFFER_SIZE] = '\0';
-        if (cond_3)
-        {
-            saved = extract_remaining(stash, separator);
-            cond_3 = 0;
-        }
-        printf("index : %d\n", index);
+        if (read_bytes == -1 || !stash)
+            return (NULL);
+        stash[read_bytes] = '\0';
+        index = n_index(stash, '\n');
         if (index == -1)
         {
-            saved = concat_chars(saved, stash);
-            printf("condition 1 : saved : %s\n", saved);
+            if (!(saved))
+                saved = ft_strdup("");
+            saved = ft_strjoin(saved, stash);
         }
-        else if (index == BUFFER_SIZE - 1)
-        {
-            saved = concat_chars(saved, stash);
-            printf("condition 2 : saved + stash : %s\n", saved);
-            found_n = 1;
-            return (saved);
-        }
-        else if (index > -1 && index < (BUFFER_SIZE - 1))
-        {
-            char_return = extract_return(stash, separator);
-            cond_3 = 1;
-            // found_n = 1;
-            if (saved)
-            {
-                // free(saved);
-                // saved = extract_remaining(stash, separator);
-                printf("conditions 3 saved : %s\n" ,saved);
-                return (concat_chars(saved, char_return));
-            }
-            else
-                return (stash);
-        }
+        else
+            return(return_line(&saved, stash, &read_bytes, index, fd));
     }
+    if (saved)
+        return (return_line(&saved, stash, &read_bytes, index, fd));
+    free(saved);
+    free(stash);
+    return (NULL);
 }
 
-char *concat_chars(char *saved, char *stash)
+char *return_line(char **saved, char *stash, size_t *read_bytes, int index, int fd)
 {
-    size_t saved_len;
-    size_t stash_len;
-    char *result;
     char *temp;
 
-    saved_len = 0;
-    temp = NULL;
-    if (saved)
+    if (*read_bytes == 0)
     {
-        temp = saved;
-        saved_len = ft_strlen(temp);
+        if (*saved && (*saved)[0] != '\0')
+        {
+            index = n_index(*saved, '\n');
+            if (index > -1)
+            {
+                temp = extract(stash, '\n', 1, *read_bytes);
+                *saved = extract(stash, '\n', 0, *read_bytes);
+                return (temp);
+            }
+            temp = *saved;
+            *saved = NULL;
+            return (temp);
+        }
+        return (NULL);
     }
-    else
+    if (index == *read_bytes - 1)
     {
-        if (!stash)
-            return (NULL);
-        return (ft_substr(stash, 0, ft_strlen(stash)));
+        if (!(*saved))
+            *saved = ft_strdup("");
+        temp = ft_strjoin(*saved, stash);
+        *saved = NULL;
+        return (temp);
     }
-    stash_len = ft_strlen(stash);
-    result = malloc(saved_len + stash_len + 1);
-    ft_memcpy(result, temp, saved_len);
-    ft_memcpy(&result[saved_len], stash, stash_len);
-    result[saved_len + stash_len] = '\0';
-    // free(saved);
-    return (result);
+    else if (index > -1 && index < (*read_bytes - 1))
+    {
+        if (!(*saved))
+        {
+            *saved = extract(stash, '\n', 0, *read_bytes);
+            return (extract(stash, '\n', 1, *read_bytes));
+        }
+        else
+        {
+            temp = *saved;
+            *saved = extract(stash, '\n', 0, *read_bytes);
+            return(ft_strjoin(temp, extract(stash, '\n', 1, *read_bytes)));
+        }
+    }
+    return (NULL);
 }
 
-char *extract_return(char *stash, char separator)
+char *extract(char *stash, char separator, int extract_return, size_t read_bytes)
 {
     int i;
-    
-    i = 0;
-    if (!stash)
-        return (NULL);
-    while (i < BUFFER_SIZE && stash[i] != separator)
-        i++;
-    if (stash[i] == separator)
-        return (ft_substr(stash, 0, i + 1));
-    return  (NULL);
-}
 
-char    *extract_remaining(char *stash, char separator)
-{
-    int i;
-    
     i = 0;
     if (!stash)
-        return (NULL);
-    while (i < BUFFER_SIZE && stash[i] != separator)
+    return (NULL);
+    while (i < read_bytes && stash[i] != separator)
         i++;
     if (stash[i] == separator)
-        return (ft_substr(stash, i + 1, BUFFER_SIZE - i + 1));
+    {
+        if (extract_return)
+            return (ft_substr(stash, 0, i + 1));
+        else
+            return (ft_substr(stash, i + 1, read_bytes - i + 1));
+    }
     return  (NULL);
 }
 
@@ -136,7 +112,7 @@ int n_index(char *stash, char separator)
     int i;
 
     i = 0;
-    while (stash[i] != separator && i < BUFFER_SIZE)
+    while (i < BUFFER_SIZE && stash[i] && stash[i] != separator)
         i++;
     if (stash [i] == separator)
         return (i);
@@ -150,15 +126,9 @@ int main(void)
     int fd;
 
     fd = open("fd.txt", O_RDONLY);
-    printf("line : %s", get_next_line (fd));
-    printf("line : %s", get_next_line (fd));
-    printf("line : %s", get_next_line (fd));
-    // printf("line : %s", get_next_line (fd));
-    // printf("line : %s", get_next_line (fd));
-//     // char *saved = NULL;
-
-    // char *saved = "ABC"; 
-    // char *stash = "DE\n";
-    // printf("result : %s\n", concat_chars(saved, stash));
-    // ("empty saved : %s\n", save_subs(saved, "ab\n"));
+    printf("line : %s\n", get_next_line (fd));
+    printf("line : %s\n", get_next_line (fd));
+    printf("line : %s\n", get_next_line (fd));
+    printf("line : %s\n", get_next_line (fd));
+    printf("line : %s\n", get_next_line (fd));
 }
