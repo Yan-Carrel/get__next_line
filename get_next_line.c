@@ -7,59 +7,75 @@
 
 int     n_index(char *stash, char separator, size_t read_bytes);
 char *extract(char *stash, char separator, int extract_return, size_t read_bytes);
-char *return_line(char **saved, char *stash, size_t *read_bytes, int index);
+char *return_line(char **saved, char *stash, size_t *read_bytes, int fd);
 
 char    *get_next_line(int fd)
 {
     static char *saved = NULL;
     char *stash;
-    int index;
-    size_t read_bytes;
     char *temp;
+    size_t read_bytes;
 
     stash = malloc (BUFFER_SIZE + 1);
     read_bytes = -2;
-    while (read_bytes != 0 && read_bytes != -1)
+    if (saved && ft_memchr_int(saved, '\n', ft_strlen(saved)) != -1)
+        return(split_and_return(&saved));    
+    while (!saved || ft_memchr_int(saved, '\n', ft_strlen(saved)) == -1)  // while no \n in stash 
     {
         read_bytes = read(fd, stash, BUFFER_SIZE);
-        if (read_bytes == -1 || !stash)
-            return (NULL);
+        if (read_bytes <= 0)
+            break;
         stash[read_bytes] = '\0';
-        index = ft_memchr_int(stash, '\n', read_bytes);
-        if (index == -1)
-        {
-            if (!(saved))
-                saved = ft_strdup("");
-            saved = ft_strjoin(saved, stash);
-        }
-        else
-            return(return_line(&saved, stash, &read_bytes, index));
-    }
-    if (read_bytes == 0)
-    {
         if (!(saved))
-            return (NULL);
-        temp = saved;
-        saved = NULL;
-        return (temp);
+            saved = ft_strdup(stash);
+        else
+        {
+            temp = saved;
+            saved = ft_strjoin(saved, stash);
+            free(temp);
+            free(stash);
+        }
+        free(stash);
     }
-    free(saved);
-    free(stash);
-    return (NULL);
+    if (!saved)
+        return (NULL);
+    return(split_and_return(&saved));
 }
 
-char *return_line(char **saved, char *stash, size_t *read_bytes, int index)
+char *split_and_return(char *saved)
 {
-    char *temp;
-
-    if (ft_memchr_int(stash, '\n', *read_bytes) != -1)
-    {
-        temp = *saved;
-        *saved = ft_strjoin(*saved, extract(stash, '\n', 0, *read_bytes));
-        return (ft_strjoin(temp, extract(stash, '\n', 1, *read_bytes)));
-    }
-    return (NULL);
+    
 }
+
+// char *return_line(char **saved, char *stash, size_t *read_bytes, int fd)
+// {
+//     char *temp;
+//     char *result;
+//     char *rest_of_stash;
+//     char *char_with_line;
+
+//     if (ft_memchr_int(*saved, '\n', ft_strlen(*saved)))
+//     {
+//         temp = *saved;
+//         saved = extract(*saved, '\n', 1, ft_strlen(*saved));
+//         return (temp);
+//     }
+//     while (ft_memchr_int(stash, '\n', read_bytes))
+//     {
+//         read_bytes = read(fd, stash, BUFFER_SIZE);
+//         if (read_bytes == 0)
+//             break; 
+//         stash[*read_bytes] = '\0';
+//         *saved = ft_strjoin(*saved, stash);
+//         if (ft_memchr_int(*saved, '\n', ft_strlen(*saved)))
+//             break;
+//     }
+//     if (!(*saved))
+//         return (NULL);
+//     else
+//         return (return_line(*saved, '\n', ft_strlen(*saved), fd));
+//     return (NULL);
+// }
 
 char *extract(char *stash, char separator, int extract_return, size_t read_bytes)
 {
