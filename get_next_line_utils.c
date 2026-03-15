@@ -71,22 +71,6 @@ size_t	ft_strlen(const char *s)
 	return (i);
 }
 
-int	ft_memchr_int(const void *s, int c, size_t n)
-{
-	int				i;
-	const unsigned char	*str;
-
-	i = 0;
-	str = (const unsigned char *)s;
-	while (i < n)
-	{
-		if (str[i] == (unsigned char)c)
-			return (i);
-		i++;
-	}
-	return (-1);
-}
-
 char	*ft_strjoin(char const *s1, char const *s2)
 {
 	char	*buffer;

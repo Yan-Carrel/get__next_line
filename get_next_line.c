@@ -3,79 +3,88 @@
 #endif
 
 #include "get_next_line.h"
-#include <stdio.h>
 
-int     n_index(char *stash, char separator, size_t read_bytes);
-char *extract(char *stash, char separator, int extract_return, size_t read_bytes);
-char *return_line(char **saved, char *stash, size_t *read_bytes, int fd);
+int ft_memchr_index(char *s, char separator);
+ssize_t read_file(char **saved, char **stash, int fd);
+char *split_and_return(char **saved, char *stash, ssize_t read_bytes, int fd);
+char    *extract(char *stash, char separator, int extract_return, size_t read_bytes);
 
 char    *get_next_line(int fd)
 {
     static char *saved = NULL;
     char *stash;
-    char *temp;
-    size_t read_bytes;
+    char *line;
+    ssize_t read_bytes;
 
-    stash = malloc (BUFFER_SIZE + 1);
-    read_bytes = -2;
-    if (saved && ft_memchr_int(saved, '\n', ft_strlen(saved)) != -1)
-        return(split_and_return(&saved));    
-    while (!saved || ft_memchr_int(saved, '\n', ft_strlen(saved)) == -1)  // while no \n in stash 
-    {
-        read_bytes = read(fd, stash, BUFFER_SIZE);
-        if (read_bytes <= 0)
-            break;
-        stash[read_bytes] = '\0';
-        if (!(saved))
-            saved = ft_strdup(stash);
-        else
-        {
-            temp = saved;
-            saved = ft_strjoin(saved, stash);
-            free(temp);
-            free(stash);
-        }
-        free(stash);
-    }
-    if (!saved)
+    stash = malloc(BUFFER_SIZE + 1);
+    read_bytes = 1;
+    if (!saved || ft_memchr_index(saved, '\n') == -1)
+        read_bytes = read_file(&saved, &stash, fd);
+    if (read_bytes < 0)
         return (NULL);
-    return(split_and_return(&saved));
+    if (read_bytes == 0)
+    {
+        line = saved;
+        saved = NULL;
+    }
+    if (read_bytes > 0)
+        line = split_and_return(&saved, stash, read_bytes, fd);
+    free(stash);
+    if (line)
+        return (line);
+    return (NULL);
 }
 
-char *split_and_return(char *saved)
+ssize_t read_file(char **saved, char **stash, int fd)
 {
+    ssize_t read_bytes;
+    char *remaining;
+    char    *temp;
     
+    read_bytes = read(fd, *stash, BUFFER_SIZE);
+    (*stash)[read_bytes] = '\0';
+    if (*saved && read_bytes > 0)
+    {
+        temp = ft_strjoin(*saved, *stash);
+        free(*saved);
+        *saved = temp;
+    }
+    else if (!(*saved) && read_bytes > 0)
+        *saved = ft_strdup(*stash);
+    while (*saved && ft_memchr_index(*saved, '\n') == -1)
+    {
+        read_bytes = read(fd, *stash, BUFFER_SIZE);
+        (*stash)[read_bytes] = '\0';
+        temp = ft_strjoin(*saved, *stash);
+        free(*saved);
+        *saved = temp;
+        if (read_bytes == 0)
+            break;
+    }
+    return (read_bytes);
 }
 
-// char *return_line(char **saved, char *stash, size_t *read_bytes, int fd)
-// {
-//     char *temp;
-//     char *result;
-//     char *rest_of_stash;
-//     char *char_with_line;
+char *split_and_return(char **saved, char *stash, ssize_t read_bytes, int fd)
+{
+    char    *line;
+    char    *remaining;
 
-//     if (ft_memchr_int(*saved, '\n', ft_strlen(*saved)))
-//     {
-//         temp = *saved;
-//         saved = extract(*saved, '\n', 1, ft_strlen(*saved));
-//         return (temp);
-//     }
-//     while (ft_memchr_int(stash, '\n', read_bytes))
-//     {
-//         read_bytes = read(fd, stash, BUFFER_SIZE);
-//         if (read_bytes == 0)
-//             break; 
-//         stash[*read_bytes] = '\0';
-//         *saved = ft_strjoin(*saved, stash);
-//         if (ft_memchr_int(*saved, '\n', ft_strlen(*saved)))
-//             break;
-//     }
-//     if (!(*saved))
-//         return (NULL);
-//     else
-//         return (return_line(*saved, '\n', ft_strlen(*saved), fd));
-//     return (NULL);
-// }
+    remaining = extract(*saved, '\n', -1, read_bytes);
+    if (remaining)
+    {
+        line = extract(*saved, '\n', 1, read_bytes);
+        free(*saved);
+        *saved = remaining;
+        return (line);
+    }
+    if (*saved)
+    {
+        line = *saved;
+        *saved = NULL;
+        return (line);
+    }
+    return (NULL);
+}
 
 char *extract(char *stash, char separator, int extract_return, size_t read_bytes)
 {
@@ -84,19 +93,34 @@ char *extract(char *stash, char separator, int extract_return, size_t read_bytes
     i = 0;
     if (!stash)
         return (NULL);
-    while (i < read_bytes && stash[i] != separator)
+    while (stash[i] && stash[i] != separator)
         i++;
     if (stash[i] == separator)
     {
-        if (extract_return)
+        if (extract_return == 1)
             return (ft_substr(stash, 0, i + 1));
-        else
-            return (ft_substr(stash, i + 1, read_bytes - i + 1));
+        else if (extract_return == -1)
+            return (ft_substr(stash, i + 1, ft_strlen(stash) - i - 1));
     }
     return  (NULL);
 }
 
+int ft_memchr_index(char *s, char separator)
+{
+    int i;
+
+    i = 0;
+    while (s[i] != '\0')
+    {
+        if (s[i] == separator)
+            return (i);
+        i++;
+    }
+    return (-1);
+}
+
 #include <fcntl.h>
+#include <stdio.h>
 
 int main(void)
 {
