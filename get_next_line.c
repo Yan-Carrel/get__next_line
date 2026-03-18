@@ -6,8 +6,8 @@
 
 int ft_memchr_index(char *s, char separator);
 ssize_t read_file(char **saved, char **stash, int fd);
-char *split_and_return(char **saved, char *stash, ssize_t read_bytes, int fd);
-char    *extract(char *stash, char separator, int extract_return, size_t read_bytes);
+char *split_and_return(char **saved, char *stash, ssize_t read_bytes);
+char    *extract(char *stash, char separator, int extract_return);
 
 char    *get_next_line(int fd)
 {
@@ -21,14 +21,17 @@ char    *get_next_line(int fd)
     if (!saved || ft_memchr_index(saved, '\n') == -1)
         read_bytes = read_file(&saved, &stash, fd);
     if (read_bytes < 0)
+    {
+        free(stash);
         return (NULL);
+    }
     if (read_bytes == 0)
     {
         line = saved;
         saved = NULL;
     }
-    if (read_bytes > 0)
-        line = split_and_return(&saved, stash, read_bytes, fd);
+    else
+        line = split_and_return(&saved, stash, read_bytes);
     free(stash);
     if (line)
         return (line);
@@ -42,6 +45,8 @@ ssize_t read_file(char **saved, char **stash, int fd)
     char    *temp;
     
     read_bytes = read(fd, *stash, BUFFER_SIZE);
+    if (read_bytes <= 0)
+        return (read_bytes);
     (*stash)[read_bytes] = '\0';
     if (*saved && read_bytes > 0)
     {
@@ -51,7 +56,7 @@ ssize_t read_file(char **saved, char **stash, int fd)
     }
     else if (!(*saved) && read_bytes > 0)
         *saved = ft_strdup(*stash);
-    while (*saved && ft_memchr_index(*saved, '\n') == -1)
+    while (read_bytes > 0 && ft_memchr_index(*saved, '\n') == -1)
     {
         read_bytes = read(fd, *stash, BUFFER_SIZE);
         (*stash)[read_bytes] = '\0';
@@ -64,20 +69,20 @@ ssize_t read_file(char **saved, char **stash, int fd)
     return (read_bytes);
 }
 
-char *split_and_return(char **saved, char *stash, ssize_t read_bytes, int fd)
+char *split_and_return(char **saved, char *stash, ssize_t read_bytes)
 {
     char    *line;
     char    *remaining;
 
-    remaining = extract(*saved, '\n', -1, read_bytes);
+    remaining = extract(*saved, '\n', -1);
     if (remaining)
     {
-        line = extract(*saved, '\n', 1, read_bytes);
+        line = extract(*saved, '\n', 1);
         free(*saved);
         *saved = remaining;
         return (line);
     }
-    if (*saved)
+    if (*saved && *saved[0] != '\0')
     {
         line = *saved;
         *saved = NULL;
@@ -86,7 +91,7 @@ char *split_and_return(char **saved, char *stash, ssize_t read_bytes, int fd)
     return (NULL);
 }
 
-char *extract(char *stash, char separator, int extract_return, size_t read_bytes)
+char *extract(char *stash, char separator, int extract_return)
 {
     int i;
 
@@ -128,8 +133,6 @@ int main(void)
 
     fd = open("fd.txt", O_RDONLY);
     printf("line : %s\n", get_next_line (fd));
-    printf("line : %s\n", get_next_line (fd));
-    printf("line : %s\n", get_next_line (fd));
-    printf("line : %s\n", get_next_line (fd));
+    fd = open("fd1.txt", O_RDONLY);
     printf("line : %s\n", get_next_line (fd));
 }
