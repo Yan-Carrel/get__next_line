@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*   get_next_line_bonus.c                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: yaandria <yaandria@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/03/23 09:51:59 by yaandria          #+#    #+#             */
-/*   Updated: 2026/03/23 10:03:40 by yaandria         ###   ########.fr       */
+/*   Created: 2026/03/23 09:52:21 by yaandria          #+#    #+#             */
+/*   Updated: 2026/03/23 10:05:39 by yaandria         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,15 +23,15 @@ char	*extract(char *stash, char separator, int extract_return);
 
 char	*get_next_line(int fd)
 {
-	static char	*saved;
+	static char	*saved[1024];
 	char		*stash;
 	char		*line;
 	ssize_t		read_bytes;
 
 	stash = malloc(BUFFER_SIZE + 1);
 	read_bytes = 1;
-	if (!saved || ft_memchr_index(saved, '\n') == -1)
-		read_bytes = read_file(&saved, &stash, fd);
+	if (!saved[fd] || ft_memchr_index(saved[fd], '\n') == -1)
+		read_bytes = read_file(&saved[fd], &stash, fd);
 	if (read_bytes < 0)
 	{
 		free(stash);
@@ -39,11 +39,11 @@ char	*get_next_line(int fd)
 	}
 	if (read_bytes == 0)
 	{
-		line = saved;
-		saved = NULL;
+		line = saved[fd];
+		saved[fd] = NULL;
 	}
 	else
-		line = split_and_return(&saved, read_bytes);
+		line = split_and_return(&saved[fd], read_bytes);
 	free(stash);
 	if (line)
 		return (line);
