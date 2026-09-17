@@ -6,19 +6,15 @@
 /*   By: yaandria <yaandria@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 09:52:21 by yaandria          #+#    #+#             */
-/*   Updated: 2026/03/23 10:05:39 by yaandria         ###   ########.fr       */
+/*   Updated: 2026/03/25 12:23:37 by yaandria         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-#ifndef BUFFER_SIZE
-# define BUFFER_SIZE 3
-#endif
 
 #include "get_next_line.h"
 
 int		ft_memchr_index(char *s, char separator);
 ssize_t	read_file(char **saved, char **stash, int fd);
-char	*split_and_return(char **saved, ssize_t read_bytes);
+char	*split_and_return(char **saved);
 char	*extract(char *stash, char separator, int extract_return);
 
 char	*get_next_line(int fd)
@@ -28,26 +24,25 @@ char	*get_next_line(int fd)
 	char		*line;
 	ssize_t		read_bytes;
 
+	if (fd < 0 || BUFFER_SIZE <= 0)
+		return (NULL);
 	stash = malloc(BUFFER_SIZE + 1);
+	if (!stash)
+		return (NULL);
 	read_bytes = 1;
 	if (!saved[fd] || ft_memchr_index(saved[fd], '\n') == -1)
 		read_bytes = read_file(&saved[fd], &stash, fd);
 	if (read_bytes < 0)
-	{
-		free(stash);
-		return (NULL);
-	}
+		return (free(stash), NULL);
 	if (read_bytes == 0)
 	{
 		line = saved[fd];
 		saved[fd] = NULL;
 	}
 	else
-		line = split_and_return(&saved[fd], read_bytes);
+		line = split_and_return(&saved[fd]);
 	free(stash);
-	if (line)
-		return (line);
-	return (NULL);
+	return (line);
 }
 
 ssize_t	read_file(char **saved, char **stash, int fd)
@@ -74,7 +69,7 @@ ssize_t	read_file(char **saved, char **stash, int fd)
 	return (read_bytes);
 }
 
-char	*split_and_return(char **saved, ssize_t read_bytes)
+char	*split_and_return(char **saved)
 {
 	char	*line;
 	char	*remaining;

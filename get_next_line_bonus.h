@@ -6,12 +6,16 @@
 /*   By: yaandria <yaandria@student.42antananari    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 09:37:31 by yaandria          #+#    #+#             */
-/*   Updated: 2026/03/23 10:04:01 by yaandria         ###   ########.fr       */
+/*   Updated: 2026/03/25 11:47:18 by yaandria         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef GET_NEXT_LINE_BONUS_H
 # define GET_NEXT_LINE_BONUS_H
+
+# ifndef BUFFER_SIZE
+#  define BUFFER_SIZE 3
+# endif
 
 # include <stddef.h>
 # include <stdlib.h>
